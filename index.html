@@ -35,15 +35,16 @@ body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14
 .fade.top{top:0;height:14%;background:linear-gradient(#000,transparent)}
 .fade.bot{bottom:0;height:30%;background:linear-gradient(transparent,#000)}
 /* vertical (tategaki) mode */
-.prompter.v{height:clamp(320px,52vh,640px)}
-.prompter.v .track{left:auto;right:0;top:0;bottom:0;writing-mode:vertical-rl;padding:clamp(14px,3vh,28px) 0}
-.prompter.v .track p{line-height:1.7;letter-spacing:.06em}
+.prompter.v{height:clamp(360px,62vh,760px)}
+.prompter.v .track{left:50%;right:auto;padding:0;writing-mode:vertical-rl}
+.prompter.v .track p{margin:0;white-space:nowrap;line-height:1.2;letter-spacing:.08em}
 .tcy{text-combine-upright:all;-webkit-text-combine:horizontal}
-.prompter.v .guide{top:0;bottom:0;left:auto;right:var(--gx,26%);height:auto;width:0;border-top:0;border-left:1px dashed var(--cue)}
-.prompter.v .guide::before{left:-6px;top:0;border-color:transparent;border-top-color:var(--cue)}
-.prompter.v .guide::after{left:-6px;right:auto;top:auto;bottom:0;border-color:transparent;border-bottom-color:var(--cue)}
-.prompter.v .fade.top{top:0;bottom:0;left:auto;right:0;height:auto;width:10%;background:linear-gradient(to left,#000,transparent)}
-.prompter.v .fade.bot{top:0;bottom:0;left:0;height:auto;width:30%;background:linear-gradient(to right,#000,transparent)}
+.brk{display:inline-block;inline-size:2em;text-align:center;color:var(--cue)}
+.prompter.v .guide{display:none}
+.win{display:none;position:absolute;left:50%;top:var(--wy,24px);transform:translateX(-50%);width:calc(var(--fs) * 1.9);height:var(--wh,160px);border:2px solid var(--cue);border-radius:10px;pointer-events:none}
+.prompter.v .win{display:block}
+.prompter.v .fade.top{top:0;height:var(--wy,24px);background:rgba(0,0,0,.9)}
+.prompter.v .fade.bot{top:calc(var(--wy,24px) + var(--wh,160px));bottom:0;height:auto;background:linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.92))}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;width:max-content}
 .seg button{border:0;border-radius:0;background:transparent;padding:7px 14px;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:var(--cue);color:#111}
@@ -106,6 +107,7 @@ textarea{width:100%;min-height:200px;resize:vertical;background:#0c0f13;color:va
     <div class="track" id="track"></div>
     <div class="fade top"></div><div class="fade bot"></div>
     <div class="guide"></div>
+    <div class="win" id="win"></div>
     <div class="count" id="count" hidden>3</div>
   </div>
 
@@ -126,9 +128,10 @@ textarea{width:100%;min-height:200px;resize:vertical;background:#0c0f13;color:va
         <button id="btnReset">最初に戻す</button>
       </div>
       <label class="field" for="rngGoal">流す速さ<input type="range" id="rngGoal" min="40" max="75" step="1" value="58"><output id="outGoal">58秒</output></label>
+      <label class="field" for="rngWin" id="winField">読む範囲<input type="range" id="rngWin" min="3" max="5" step="1" value="4"><output id="outWin">4字</output></label>
       <label class="field" for="rngSize">文字サイズ<input type="range" id="rngSize" min="22" max="72" step="2" value="40"><output id="outSize">40px</output></label>
       <div class="note" id="pace"></div>
-      <div class="keys"><kbd>Space</kbd> 録画の開始・停止　<kbd>P</kbd> 練習の開始・一時停止　<kbd>↑</kbd><kbd>↓</kbd>（縦書きは<kbd>←</kbd><kbd>→</kbd>） 位置の微調整</div>
+      <div class="keys"><kbd>Space</kbd> 録画の開始・停止　<kbd>P</kbd> 練習の開始・一時停止　<kbd>↑</kbd><kbd>↓</kbd> 位置の微調整</div>
     </div>
   </div>
 
@@ -161,6 +164,8 @@ const track=$('track'), prompter=$('prompter'), script=$('script');
 const rngGoal=$('rngGoal'), rngSize=$('rngSize');
 let goal = +store.get('goal', 58), size = +store.get('size', 40);
 let vert = store.get('vert','0')==='1';
+let win = +store.get('win', 4);
+$('rngWin').value = win;
 rngGoal.value = goal; rngSize.value = size;
 script.value = store.get('script', DEFAULT_SCRIPT);
 
@@ -176,9 +181,14 @@ function fmtGoal(s){ return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
 
 function renderScript(){
   track.innerHTML='';
-  script.value.split(/\n\s*\n|\n/).map(t=>t.trim()).filter(Boolean).forEach(t=>{
-    const p=document.createElement('p'); const esc=t.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); p.innerHTML=esc.replace(/(^|[^0-9０-９])([0-9]{1,2})(?![0-9])/g,'$1<span class="tcy">$2</span>'); track.appendChild(p);
-  });
+  const html = t => t.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/(^|[^0-9０-９])([0-9]{1,2})(?![0-9])/g,'$1<span class="tcy">$2</span>');
+  const paras = script.value.split(/\n\s*\n|\n/).map(t=>t.trim()).filter(Boolean);
+  if(vert && paras.length){
+    // one continuous column: the eye stays in the window, the text moves
+    const p=document.createElement('p'); p.innerHTML = paras.map(html).join('<span class="brk" aria-hidden="true">・</span>'); track.appendChild(p);
+  } else {
+    paras.forEach(t=>{ const p=document.createElement('p'); p.innerHTML=html(t); track.appendChild(p); });
+  }
   if(!track.firstChild){ const p=document.createElement('p'); p.style.color='#6b7480'; p.textContent='下の「原稿を編集」に原稿を貼り付けてください'; track.appendChild(p); $('editBox').open=true; }
   const n = script.value.replace(/\s/g,'').length;
   $('chars').textContent = n+'字（スペース・改行を除く）';
@@ -193,20 +203,22 @@ function updatePace(){
   $('outGoal').textContent = goal+'秒'; $('tGoal').textContent = fmtGoal(goal);
 }
 function layout(){
-  track.style.setProperty('--fs', size+'px');
+  prompter.style.setProperty('--fs', size+'px');
+  $('winField').hidden = !vert; $('outWin').textContent = win+'字';
   $('outSize').textContent = size+'px';
   prompter.classList.toggle('v', vert);
   $('btnH').setAttribute('aria-pressed', String(!vert)); $('btnV').setAttribute('aria-pressed', String(vert));
-  $('hint').innerHTML = vert ? '▲ カメラはこの上です。<b>黄色い線</b>の列を上から読みます。次の行は左から流れてきます' : '▲ カメラはこの上です。目線は<b>黄色い線</b>のあたりに置くと、カメラ目線に見えます';
+  $('hint').innerHTML = vert ? '▲ カメラはこの上です。<b>黄色い枠</b>の中だけを見てください。文字が下から上へ流れてきます' : '▲ カメラはこの上です。目線は<b>黄色い線</b>のあたりに置くと、カメラ目線に見えます';
   if(vert){
-    const w = prompter.clientWidth;
-    track.style.paddingTop = track.style.paddingBottom = '';
-    track.style.paddingRight = (w*GUIDE - size*0.9)+'px';
-    track.style.paddingLeft = w+'px';
-    prompter.style.setProperty('--gx', Math.max(4, w*GUIDE - size*0.9 - 8)+'px');
+    const h = prompter.clientHeight;
+    const wy = Math.max(14, Math.round(h*0.05));
+    const wh = Math.round(win * size * 1.08 + size*0.3);
+    track.style.padding = '0';
+    prompter.style.setProperty('--wy', wy+'px'); prompter.style.setProperty('--wh', wh+'px');
+    track.style.top = (wy + size*0.15)+'px';
   } else {
     const h = prompter.clientHeight;
-    track.style.paddingRight = track.style.paddingLeft = '';
+    track.style.padding = ''; track.style.top = '';
     track.style.paddingTop = (h*GUIDE - size*0.9)+'px';
     track.style.paddingBottom = h+'px';
   }
@@ -214,15 +226,21 @@ function layout(){
 }
 function contentH(){
   const cs = getComputedStyle(track);
-  if(vert) return track.scrollWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  if(vert){ const p=track.firstElementChild; return p ? p.offsetHeight : 0; }
   return track.scrollHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
 }
 function apply(){
   // last line ends on the guide line at pos=1
   const lastP = track.lastElementChild;
-  const lastH = lastP ? (vert ? lastP.offsetWidth : lastP.offsetHeight) : 0;
+  if(vert){
+    const wh = parseFloat(getComputedStyle(prompter).getPropertyValue('--wh')) || 0;
+    const dist = Math.max(0, contentH() - wh + size*0.3);
+    track.style.transform = `translate(-50%, ${-pos*dist}px)`;
+    return;
+  }
+  const lastH = lastP ? lastP.offsetHeight : 0;
   const dist = Math.max(0, contentH() - lastH);
-  track.style.transform = vert ? `translateX(${pos*dist}px)` : `translateY(${-pos*dist}px)`;
+  track.style.transform = `translateY(${-pos*dist}px)`;
 }
 function tick(now){
   const dt = Math.min(0.1,(now-last)/1000); last = now;
@@ -329,7 +347,8 @@ function syncButtons(){
 $('btnRec').onclick = ()=> mode==='rec' ? stopRec() : startRec();
 $('btnPractice').onclick = togglePractice;
 $('btnReset').onclick = ()=>{ if(mode==='paused') mode='idle'; resetRun(); syncButtons(); };
-function setVert(v){ if(mode==='rec'||mode==='countdown') return; vert=v; store.set('vert', v?'1':'0'); layout(); }
+function setVert(v){ if(mode==='rec'||mode==='countdown') return; vert=v; store.set('vert', v?'1':'0'); renderScript(); }
+$('rngWin').oninput = ()=>{ win=+$('rngWin').value; store.set('win',win); layout(); };
 $('btnH').onclick = ()=>setVert(false);
 $('btnV').onclick = ()=>setVert(true);
 rngGoal.oninput = ()=>{ goal=+rngGoal.value; store.set('goal',goal); updatePace(); };
@@ -341,7 +360,7 @@ document.addEventListener('keydown', e=>{
   if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT') return;
   if(e.code==='Space'){ e.preventDefault(); if(mode==='rec') stopRec(); else if(mode==='idle' && stream) startRec(); }
   else if(e.key==='p'||e.key==='P'){ togglePractice(); }
-  else if(['ArrowDown','ArrowUp','ArrowLeft','ArrowRight'].includes(e.key)){ e.preventDefault(); const fwd = e.key==='ArrowDown' || (vert && e.key==='ArrowLeft') || (!vert && e.key==='ArrowRight'); pos=Math.min(1,Math.max(0,pos+(fwd?0.02:-0.02))); apply(); }
+  else if(['ArrowDown','ArrowUp','ArrowLeft','ArrowRight'].includes(e.key)){ e.preventDefault(); const fwd = e.key==='ArrowDown' || e.key==='ArrowRight'; pos=Math.min(1,Math.max(0,pos+(fwd?0.02:-0.02))); apply(); }
 });
 
 renderScript(); updateTimer(); syncButtons();
