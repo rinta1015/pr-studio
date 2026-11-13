@@ -46,13 +46,15 @@ body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14
 .prompter.v .fade.top{top:0;height:var(--wy,24px);background:rgba(0,0,0,.9)}
 .prompter.v .fade.bot{top:calc(var(--wy,24px) + var(--wh,160px));bottom:0;height:auto;background:linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.92))}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;width:max-content}
-.seg button{border:0;border-radius:0;background:transparent;padding:7px 14px;color:var(--muted)}
+.seg button{border:0;border-radius:0;background:transparent;padding:8px 16px;min-height:44px;color:var(--muted)}
+.segs{display:flex;flex-wrap:wrap;gap:10px}
 .seg button[aria-pressed="true"]{background:var(--cue);color:#111}
 .count{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-num);font-size:min(28vh,160px);color:var(--cue);background:rgba(0,0,0,.6)}
 
 /* Studio row */
 .studio{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:14px}
-@media (max-width:760px),(orientation:portrait) and (max-width:1100px){.studio{grid-template-columns:1fr}.cam{justify-self:center;width:min(100%,calc(30vh * 16 / 9))}}
+.cam.port{aspect-ratio:9/16;justify-self:center;width:min(100%,calc(56vh * 9 / 16))}
+@media (max-width:760px),(orientation:portrait) and (max-width:1100px){.studio{grid-template-columns:1fr}.cam{justify-self:center;width:min(100%,calc(30vh * 16 / 9))}.cam.port{width:min(100%,calc(38vh * 9 / 16))}}
 .cam{position:relative;aspect-ratio:16/9;max-width:100%;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .cam video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block}
 .cam .off{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:16px;color:var(--muted);font-size:13px}
@@ -70,7 +72,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14
 .bar span{display:block;height:100%;width:0;background:var(--ok)}
 .timer.warn+.bar span{background:var(--cue)} .timer.over+.bar span{background:var(--rec)}
 .btns{display:flex;flex-wrap:wrap;gap:8px}
-button{font:inherit;font-weight:700;border:1px solid var(--line);background:#222833;color:var(--fg);padding:10px 16px;border-radius:8px;cursor:pointer}
+button{font:inherit;font-weight:700;min-height:44px;touch-action:manipulation;border:1px solid var(--line);background:#222833;color:var(--fg);padding:10px 16px;border-radius:8px;cursor:pointer}
 button:hover:not(:disabled){border-color:var(--muted)}
 button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--cue);outline-offset:2px}
 button:disabled{opacity:.4;cursor:not-allowed}
@@ -78,7 +80,19 @@ button.rec{background:var(--rec);border-color:var(--rec);color:#fff}
 button.rec.stop{background:#fff;color:#111;border-color:#fff}
 .field{display:grid;grid-template-columns:7.5em 1fr 4.5em;align-items:center;gap:10px;font-size:13px}
 .field output{font-family:var(--f-num);text-align:right;color:var(--muted)}
-input[type=range]{width:100%;accent-color:var(--cue)}
+input[type=range]{width:100%;height:36px;accent-color:var(--cue);touch-action:pan-y}
+/* phones: big bottom bar for the three main actions */
+@media (max-width:760px){
+  .mainbtns{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:1.6fr 1.2fr 1fr;gap:8px;background:var(--panel);border-top:1px solid var(--line);
+    padding:10px max(12px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+  .mainbtns button{min-height:60px;font-size:16px;padding:8px 6px}
+  body{padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))}
+  .keys{display:none}
+  .prompter.v{height:clamp(300px,46vh,520px)}
+  .mainbtns button{white-space:nowrap}
+  .field{grid-template-columns:5.5em 1fr 3.5em}
+  .seg button{min-height:48px;padding:8px 14px}
+}
 .note{font-size:12px;color:var(--muted)}
 .keys{font-size:12px;color:var(--muted)} .keys kbd{font-family:var(--f-num);border:1px solid var(--line);border-radius:4px;padding:0 5px;color:var(--fg)}
 
@@ -112,26 +126,27 @@ textarea{width:100%;min-height:200px;resize:vertical;background:#0c0f13;color:va
   </div>
 
   <div class="studio">
-    <div class="cam">
+    <div class="cam" id="cam">
       <video id="preview" autoplay muted playsinline></video>
       <div class="off" id="camOff">カメラを準備しています…</div>
       <div class="badge" id="recBadge" hidden><i></i><span>REC</span></div>
     </div>
 
     <div class="ctrl">
-      <div class="seg" role="group" aria-label="原稿の向き"><button id="btnH" aria-pressed="true">横書き</button><button id="btnV" aria-pressed="false">縦書き</button></div>
+      <div class="segs"><div class="seg" role="group" aria-label="原稿の向き"><button id="btnH" aria-pressed="true">横書き</button><button id="btnV" aria-pressed="false">縦書き</button></div>
+      <div class="seg" role="group" aria-label="動画の向き"><button id="btnOH" aria-pressed="true">横動画 16:9</button><button id="btnOV" aria-pressed="false">縦動画 9:16</button></div></div>
       <div class="timer" id="timer"><span class="t" id="tNow">0:00.0</span><span class="of">/ 目標 <span id="tGoal">0:58</span></span></div>
       <div class="bar"><span id="barFill"></span></div>
-      <div class="btns">
+      <div class="btns mainbtns">
         <button class="rec" id="btnRec" disabled>● 録画開始</button>
-        <button id="btnPractice">練習（録画なし）</button>
-        <button id="btnReset">最初に戻す</button>
+        <button id="btnPractice">練習</button>
+        <button id="btnReset">最初へ</button>
       </div>
       <label class="field" for="rngGoal">流す速さ<input type="range" id="rngGoal" min="40" max="75" step="1" value="58"><output id="outGoal">58秒</output></label>
       <label class="field" for="rngWin" id="winField">読む範囲<input type="range" id="rngWin" min="3" max="5" step="1" value="4"><output id="outWin">4字</output></label>
       <label class="field" for="rngSize">文字サイズ<input type="range" id="rngSize" min="22" max="72" step="2" value="40"><output id="outSize">40px</output></label>
       <div class="note" id="pace"></div>
-      <div class="keys"><kbd>Space</kbd> 録画の開始・停止　<kbd>P</kbd> 練習の開始・一時停止　<kbd>↑</kbd><kbd>↓</kbd> 位置の微調整</div>
+      <div class="keys"><kbd>Space</kbd> 録画の開始・停止　<kbd>P</kbd> 練習の開始・一時停止　<kbd>↑</kbd><kbd>↓</kbd> 位置の微調整　原稿をタップでも練習の開始・一時停止</div>
     </div>
   </div>
 
@@ -165,6 +180,7 @@ const rngGoal=$('rngGoal'), rngSize=$('rngSize');
 let goal = +store.get('goal', 58), size = +store.get('size', 40);
 let vert = store.get('vert','0')==='1';
 let win = +store.get('win', 4);
+let orient = store.get('orient','h');
 $('rngWin').value = win;
 rngGoal.value = goal; rngSize.value = size;
 script.value = store.get('script', DEFAULT_SCRIPT);
@@ -276,7 +292,7 @@ async function startCamera(){
   const off=$('camOff');
   try{
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) throw new Error('nomedia');
-    stream = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720},facingMode:'user'},audio:{echoCancellation:true,noiseSuppression:true}});
+    stream = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1920},height:{ideal:1080},facingMode:'user'},audio:{echoCancellation:true,noiseSuppression:true}});
     $('preview').srcObject = stream; off.hidden = true;
     recMime = pickMime();
     $('btnRec').disabled = !window.MediaRecorder;
@@ -291,11 +307,15 @@ async function startRec(){
   resetRun();
   await countdown();
   chunks=[];
-  try{ recorder = recMime ? new MediaRecorder(stream,{mimeType:recMime}) : new MediaRecorder(stream); }
-  catch(e){ recorder = new MediaRecorder(stream); }
+  const rs = buildRecStream();
+  const opts = {videoBitsPerSecond:6000000}; if(recMime) opts.mimeType = recMime;
+  try{ recorder = new MediaRecorder(rs, opts); }
+  catch(e){ recorder = new MediaRecorder(rs); }
+  recorder._orient = orient;
   recorder.ondataavailable = e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
   const dur = {v:0};
-  recorder.onstop = ()=>addTake(new Blob(chunks,{type:recorder.mimeType||recMime||'video/webm'}), dur.v);
+  const r = recorder;
+  recorder.onstop = ()=>{ stopDraw(); addTake(new Blob(chunks,{type:r.mimeType||recMime||'video/webm'}), dur.v, r._orient); };
   recorder._dur = dur;
   recorder.start(250);
   mode='rec'; $('recBadge').hidden=false; syncButtons();
@@ -305,7 +325,26 @@ function stopRec(){
   recorder._dur.v = elapsed;
   recorder.stop(); mode='idle'; $('recBadge').hidden=true; syncButtons();
 }
-function addTake(blob, secs){
+// Crop the camera to the chosen frame on a canvas and record that, so 16:9 / 9:16 come out the same on PC, iPad and phone.
+let canvas=null, drawId=0, canvasTrack=null;
+function buildRecStream(){
+  const v=$('preview'); const vw=v.videoWidth||1280, vh=v.videoHeight||720;
+  const ta = orient==='v' ? 9/16 : 16/9;
+  let sw=vw, sh=vh; if(vw/vh > ta) sw = vh*ta; else sh = vw/ta;
+  const scale = Math.min(1, 1920/Math.max(sw,sh));
+  canvas = document.createElement('canvas');
+  canvas.width = Math.round(sw*scale/2)*2; canvas.height = Math.round(sh*scale/2)*2;
+  const ctx = canvas.getContext('2d');
+  const sx=(vw-sw)/2, sy=(vh-sh)/2;
+  const draw=()=>{ ctx.drawImage(v,sx,sy,sw,sh,0,0,canvas.width,canvas.height); drawId=requestAnimationFrame(draw); };
+  draw();
+  const cs = canvas.captureStream(30);
+  canvasTrack = cs.getVideoTracks()[0];
+  stream.getAudioTracks().forEach(t=>cs.addTrack(t));
+  return cs;
+}
+function stopDraw(){ cancelAnimationFrame(drawId); if(canvasTrack) canvasTrack.stop(); canvasTrack=null; }
+function addTake(blob, secs, o){
   takeNo++;
   const list=$('takeList'); const empty=list.querySelector('.empty'); if(empty) empty.remove();
   const type = blob.type||'';
@@ -314,7 +353,7 @@ function addTake(blob, secs){
   const el=document.createElement('div'); el.className='take';
   const v=document.createElement('video'); v.src=url; v.controls=true; v.playsInline=true;
   const info=document.createElement('div'); info.className='info';
-  const name=document.createElement('div'); name.className='name'; name.textContent='テイク '+takeNo;
+  const name=document.createElement('div'); name.className='name'; name.textContent='テイク '+takeNo+(o==='v'?'（縦動画）':'（横動画）');
   const d=document.createElement('div'); d.className='dur';
   d.textContent = '長さ '+fmt(secs)+(secs>60?'　1分を超えています':secs>=50?'　ちょうど良い長さです':'　少し短めです');
   const a=document.createElement('a'); a.className='save'; a.href=url; a.download=`自己PR_テイク${takeNo}.${ext}`; a.textContent=`保存（.${ext}）`;
@@ -336,10 +375,10 @@ function syncButtons(){
   r.classList.toggle('stop', mode==='rec');
   r.textContent = mode==='rec' ? '■ 録画停止' : '● 録画開始';
   r.disabled = !stream || !window.MediaRecorder || mode==='countdown' || mode==='practice' || mode==='paused';
-  p.textContent = mode==='practice' ? '一時停止' : mode==='paused' ? '再開' : '練習（録画なし）';
+  p.textContent = mode==='practice' ? '一時停止' : mode==='paused' ? '再開' : '練習';
   p.disabled = mode==='rec' || mode==='countdown';
   $('btnReset').disabled = mode==='rec' || mode==='countdown';
-  $('btnH').disabled = $('btnV').disabled = mode==='rec' || mode==='countdown';
+  $('btnH').disabled = $('btnV').disabled = $('btnOH').disabled = $('btnOV').disabled = mode==='rec' || mode==='countdown';
   rngGoal.disabled = mode==='rec';
 }
 
@@ -348,6 +387,11 @@ $('btnRec').onclick = ()=> mode==='rec' ? stopRec() : startRec();
 $('btnPractice').onclick = togglePractice;
 $('btnReset').onclick = ()=>{ if(mode==='paused') mode='idle'; resetRun(); syncButtons(); };
 function setVert(v){ if(mode==='rec'||mode==='countdown') return; vert=v; store.set('vert', v?'1':'0'); renderScript(); }
+function setOrient(o){ if(mode==='rec'||mode==='countdown') return; orient=o; store.set('orient',o); applyOrient(); }
+function applyOrient(){ $('cam').classList.toggle('port', orient==='v'); $('btnOH').setAttribute('aria-pressed', String(orient!=='v')); $('btnOV').setAttribute('aria-pressed', String(orient==='v')); }
+$('btnOH').onclick = ()=>setOrient('h');
+$('btnOV').onclick = ()=>setOrient('v');
+prompter.addEventListener('click', ()=>{ if(mode==='idle'||mode==='practice'||mode==='paused') togglePractice(); });
 $('rngWin').oninput = ()=>{ win=+$('rngWin').value; store.set('win',win); layout(); };
 $('btnH').onclick = ()=>setVert(false);
 $('btnV').onclick = ()=>setVert(true);
@@ -363,7 +407,7 @@ document.addEventListener('keydown', e=>{
   else if(['ArrowDown','ArrowUp','ArrowLeft','ArrowRight'].includes(e.key)){ e.preventDefault(); const fwd = e.key==='ArrowDown' || e.key==='ArrowRight'; pos=Math.min(1,Math.max(0,pos+(fwd?0.02:-0.02))); apply(); }
 });
 
-renderScript(); updateTimer(); syncButtons();
+applyOrient(); renderScript(); updateTimer(); syncButtons();
 document.fonts && document.fonts.ready.then(layout);
 last = performance.now(); raf = requestAnimationFrame(tick);
 startCamera();
