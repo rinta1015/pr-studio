@@ -1,0 +1,322 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="PR収録"><meta name="theme-color" content="#101318">
+<meta name="robots" content="noindex"></head><body>
+<title>自己PR収録スタジオ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: prompter band pinned under the webcam at the top, camera + controls below, takes list last */
+:root{
+  --bg:#101318; --panel:#181c23; --line:#2a303b; --fg:#e9edf3; --muted:#9aa4b2;
+  --cue:#f5c84b; --rec:#ef4a4a; --ok:#4cc38a;
+  --f-body:"BIZ UDPGothic","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",system-ui,sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 32px}
+.wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.hint{color:var(--muted);font-size:12px;text-align:center;letter-spacing:.04em}
+.hint b{color:var(--cue);font-weight:700}
+
+/* Prompter */
+.prompter{position:relative;height:clamp(220px,40vh,420px);background:#000;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.track{position:absolute;left:0;right:0;top:0;padding:0 clamp(16px,5vw,64px);will-change:transform}
+.track p{margin:0 0 .7em;font-size:var(--fs,40px);line-height:1.55;font-weight:700;color:#f4f6f9;letter-spacing:.02em}
+.guide{position:absolute;left:0;right:0;top:var(--gy,28%);height:0;border-top:1px dashed var(--cue);opacity:.35;pointer-events:none}
+.guide::before,.guide::after{content:"";position:absolute;top:-7px;border:6px solid transparent}
+.guide::before{left:0;border-left-color:var(--cue)}
+.guide::after{right:0;border-right-color:var(--cue)}
+.fade{position:absolute;left:0;right:0;pointer-events:none}
+.fade.top{top:0;height:14%;background:linear-gradient(#000,transparent)}
+.fade.bot{bottom:0;height:30%;background:linear-gradient(transparent,#000)}
+.count{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-num);font-size:min(28vh,160px);color:var(--cue);background:rgba(0,0,0,.6)}
+
+/* Studio row */
+.studio{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:14px}
+@media (max-width:760px){.studio{grid-template-columns:1fr}}
+.cam{position:relative;aspect-ratio:16/9;max-width:100%;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.cam video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block}
+.cam .off{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:16px;color:var(--muted);font-size:13px}
+.badge{position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.65);padding:3px 10px;border-radius:99px;font-family:var(--f-num);font-size:12px}
+.badge i{width:9px;height:9px;border-radius:50%;background:var(--rec);animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.badge i{animation:none}}
+
+.ctrl{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.timer{display:flex;align-items:baseline;gap:10px;font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.timer .t{font-size:44px;line-height:1}
+.timer .of{color:var(--muted);font-size:14px}
+.timer.warn .t{color:var(--cue)} .timer.over .t{color:var(--rec)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar span{display:block;height:100%;width:0;background:var(--ok)}
+.timer.warn+.bar span{background:var(--cue)} .timer.over+.bar span{background:var(--rec)}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button{font:inherit;font-weight:700;border:1px solid var(--line);background:#222833;color:var(--fg);padding:10px 16px;border-radius:8px;cursor:pointer}
+button:hover:not(:disabled){border-color:var(--muted)}
+button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--cue);outline-offset:2px}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.rec{background:var(--rec);border-color:var(--rec);color:#fff}
+button.rec.stop{background:#fff;color:#111;border-color:#fff}
+.field{display:grid;grid-template-columns:7.5em 1fr 4.5em;align-items:center;gap:10px;font-size:13px}
+.field output{font-family:var(--f-num);text-align:right;color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--cue)}
+.note{font-size:12px;color:var(--muted)}
+.keys{font-size:12px;color:var(--muted)} .keys kbd{font-family:var(--f-num);border:1px solid var(--line);border-radius:4px;padding:0 5px;color:var(--fg)}
+
+details{background:var(--panel);border:1px solid var(--line);border-radius:10px}
+summary{cursor:pointer;padding:12px 16px;font-weight:700}
+.edit{padding:0 16px 16px;display:flex;flex-direction:column;gap:8px}
+textarea{width:100%;min-height:200px;resize:vertical;background:#0c0f13;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:12px;font:15px/1.7 var(--f-body)}
+.meta{font-family:var(--f-num);font-size:12px;color:var(--muted)}
+
+.takes{display:flex;flex-direction:column;gap:10px}
+.takes h2{font-size:15px;margin:0}
+.take{display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr);gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;align-items:center}
+@media (max-width:560px){.take{grid-template-columns:1fr}}
+.take video{width:100%;border-radius:6px;background:#000;display:block}
+.take .info{display:flex;flex-direction:column;gap:8px;min-width:0}
+.take .name{font-weight:700}
+.take .dur{font-family:var(--f-num);font-size:13px}
+.take a.save{display:inline-block;text-decoration:none;font-weight:700;color:#111;background:var(--ok);padding:8px 14px;border-radius:8px;width:max-content}
+.empty{color:var(--muted);font-size:13px}
+</style>
+
+<div class="wrap">
+  <div class="hint">▲ カメラはこの上です。目線は<b>黄色い線</b>のあたりに置くと、カメラ目線に見えます</div>
+
+  <div class="prompter" id="prompter">
+    <div class="track" id="track"></div>
+    <div class="fade top"></div><div class="fade bot"></div>
+    <div class="guide"></div>
+    <div class="count" id="count" hidden>3</div>
+  </div>
+
+  <div class="studio">
+    <div class="cam">
+      <video id="preview" autoplay muted playsinline></video>
+      <div class="off" id="camOff">カメラを準備しています…</div>
+      <div class="badge" id="recBadge" hidden><i></i><span>REC</span></div>
+    </div>
+
+    <div class="ctrl">
+      <div class="timer" id="timer"><span class="t" id="tNow">0:00.0</span><span class="of">/ 目標 <span id="tGoal">0:58</span></span></div>
+      <div class="bar"><span id="barFill"></span></div>
+      <div class="btns">
+        <button class="rec" id="btnRec" disabled>● 録画開始</button>
+        <button id="btnPractice">練習（録画なし）</button>
+        <button id="btnReset">最初に戻す</button>
+      </div>
+      <label class="field" for="rngGoal">流す速さ<input type="range" id="rngGoal" min="40" max="75" step="1" value="58"><output id="outGoal">58秒</output></label>
+      <label class="field" for="rngSize">文字サイズ<input type="range" id="rngSize" min="22" max="72" step="2" value="40"><output id="outSize">40px</output></label>
+      <div class="note" id="pace"></div>
+      <div class="keys"><kbd>Space</kbd> 録画の開始・停止　<kbd>P</kbd> 練習の開始・一時停止　<kbd>↑</kbd><kbd>↓</kbd> 位置の微調整</div>
+    </div>
+  </div>
+
+  <details id="editBox">
+    <summary>原稿を編集</summary>
+    <div class="edit">
+      <textarea id="script" aria-label="原稿" placeholder="ここに原稿を貼り付けてください。段落ごとに改行すると読みやすくなります。"></textarea>
+      <div class="meta" id="chars"></div>
+      <div class="btns"><button id="btnDefault">原稿を消去</button></div>
+    </div>
+  </details>
+
+  <section class="takes">
+    <h2>撮ったテイク</h2>
+    <div id="takeList"><div class="empty">まだありません。録画するとここに並び、見返して保存できます。</div></div>
+  </section>
+</div>
+
+<script>
+(() => {
+const DEFAULT_SCRIPT = '';
+
+const $ = id => document.getElementById(id);
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem('prpr_'+k); return v===null?d:v; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem('prpr_'+k, v); }catch(e){} }
+};
+
+const track=$('track'), prompter=$('prompter'), script=$('script');
+const rngGoal=$('rngGoal'), rngSize=$('rngSize');
+let goal = +store.get('goal', 58), size = +store.get('size', 40);
+rngGoal.value = goal; rngSize.value = size;
+script.value = store.get('script', DEFAULT_SCRIPT);
+
+// ---------- prompter ----------
+let pos = 0;            // 0..1 progress through the script
+let elapsed = 0;        // seconds of current run
+let mode = 'idle';      // idle | countdown | practice | paused | rec
+let last = 0, raf = 0;
+const GUIDE = 0.28;
+
+function fmt(s){ const m=Math.floor(s/60), r=s-m*60; return m+':'+(r<10?'0':'')+r.toFixed(1); }
+function fmtGoal(s){ return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+
+function renderScript(){
+  track.innerHTML='';
+  script.value.split(/\n\s*\n|\n/).map(t=>t.trim()).filter(Boolean).forEach(t=>{
+    const p=document.createElement('p'); p.textContent=t; track.appendChild(p);
+  });
+  if(!track.firstChild){ const p=document.createElement('p'); p.style.color='#6b7480'; p.textContent='下の「原稿を編集」に原稿を貼り付けてください'; track.appendChild(p); $('editBox').open=true; }
+  const n = script.value.replace(/\s/g,'').length;
+  $('chars').textContent = n+'字（スペース・改行を除く）';
+  updatePace(); layout();
+}
+function updatePace(){
+  const n = script.value.replace(/\s/g,'').length;
+  const perMin = Math.round(n/goal*60);
+  let msg = `この速さだと1分あたり約${perMin}字。`;
+  msg += perMin>330 ? 'やや早口です。秒数を増やすか原稿を短くしましょう。' : perMin<260 ? 'ゆったりめです。' : '聞き取りやすいペースです。';
+  $('pace').textContent = msg;
+  $('outGoal').textContent = goal+'秒'; $('tGoal').textContent = fmtGoal(goal);
+}
+function layout(){
+  track.style.setProperty('--fs', size+'px');
+  $('outSize').textContent = size+'px';
+  const h = prompter.clientHeight;
+  track.style.paddingTop = (h*GUIDE - size*0.9)+'px';
+  track.style.paddingBottom = h+'px';
+  apply();
+}
+function contentH(){
+  const cs = getComputedStyle(track);
+  return track.scrollHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+}
+function apply(){
+  // last line ends on the guide line at pos=1
+  const lastP = track.lastElementChild;
+  const lastH = lastP ? lastP.offsetHeight : 0;
+  const dist = Math.max(0, contentH() - lastH);
+  track.style.transform = `translateY(${-pos*dist}px)`;
+}
+function tick(now){
+  const dt = Math.min(0.1,(now-last)/1000); last = now;
+  if(mode==='practice'||mode==='rec'){
+    elapsed += dt;
+    pos = Math.min(1, pos + dt/goal);
+    apply(); updateTimer();
+  }
+  raf = requestAnimationFrame(tick);
+}
+function updateTimer(){
+  $('tNow').textContent = fmt(elapsed);
+  const t=$('timer'); t.classList.toggle('warn', elapsed>=goal-5 && elapsed<60); t.classList.toggle('over', elapsed>=60);
+  $('barFill').style.width = Math.min(100, elapsed/60*100)+'%';
+}
+function resetRun(){ pos=0; elapsed=0; apply(); updateTimer(); }
+
+function countdown(){
+  return new Promise(res=>{
+    const c=$('count'); let n=3; c.textContent=n; c.hidden=false; mode='countdown'; syncButtons();
+    const iv=setInterval(()=>{ n--; if(n<=0){ clearInterval(iv); c.hidden=true; res(); } else c.textContent=n; },800);
+  });
+}
+
+// ---------- camera & recording ----------
+let stream=null, recorder=null, chunks=[], takeNo=0, recMime='';
+function pickMime(){
+  if(!window.MediaRecorder) return '';
+  const list=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+  return list.find(t=>{ try{ return MediaRecorder.isTypeSupported(t); }catch(e){ return false; } }) || '';
+}
+async function startCamera(){
+  const off=$('camOff');
+  try{
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) throw new Error('nomedia');
+    stream = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720},facingMode:'user'},audio:{echoCancellation:true,noiseSuppression:true}});
+    $('preview').srcObject = stream; off.hidden = true;
+    recMime = pickMime();
+    $('btnRec').disabled = !window.MediaRecorder;
+    if(!window.MediaRecorder){ off.hidden=false; off.textContent='このブラウザは録画に対応していません。PCのChromeかEdgeで開いてください。'; }
+  }catch(e){
+    off.hidden=false;
+    off.innerHTML = 'このページではカメラを使えません。<br>保存したHTMLファイルを<b>PCのChromeかEdge</b>で開くと録画できます。<br>プロンプターだけなら、このまま練習に使えます。';
+  }
+}
+async function startRec(){
+  if(!stream||mode!=='idle') return;
+  resetRun();
+  await countdown();
+  chunks=[];
+  try{ recorder = recMime ? new MediaRecorder(stream,{mimeType:recMime}) : new MediaRecorder(stream); }
+  catch(e){ recorder = new MediaRecorder(stream); }
+  recorder.ondataavailable = e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
+  const dur = {v:0};
+  recorder.onstop = ()=>addTake(new Blob(chunks,{type:recorder.mimeType||recMime||'video/webm'}), dur.v);
+  recorder._dur = dur;
+  recorder.start(250);
+  mode='rec'; $('recBadge').hidden=false; syncButtons();
+}
+function stopRec(){
+  if(mode!=='rec') return;
+  recorder._dur.v = elapsed;
+  recorder.stop(); mode='idle'; $('recBadge').hidden=true; syncButtons();
+}
+function addTake(blob, secs){
+  takeNo++;
+  const list=$('takeList'); const empty=list.querySelector('.empty'); if(empty) empty.remove();
+  const type = blob.type||'';
+  const ext = type.includes('mp4') ? 'mp4' : 'webm';
+  const url = URL.createObjectURL(blob);
+  const el=document.createElement('div'); el.className='take';
+  const v=document.createElement('video'); v.src=url; v.controls=true; v.playsInline=true;
+  const info=document.createElement('div'); info.className='info';
+  const name=document.createElement('div'); name.className='name'; name.textContent='テイク '+takeNo;
+  const d=document.createElement('div'); d.className='dur';
+  d.textContent = '長さ '+fmt(secs)+(secs>60?'　1分を超えています':secs>=50?'　ちょうど良い長さです':'　少し短めです');
+  const a=document.createElement('a'); a.className='save'; a.href=url; a.download=`自己PR_テイク${takeNo}.${ext}`; a.textContent=`保存（.${ext}）`;
+  const note=document.createElement('div'); note.className='note';
+  note.textContent = ext==='webm' ? '提出形式がMP4指定の場合は、変換が必要です。' : '';
+  info.append(name,d,a,note); el.append(v,info);
+  list.prepend(el);
+}
+
+// ---------- practice ----------
+async function togglePractice(){
+  if(mode==='practice'){ mode='paused'; }
+  else if(mode==='paused'){ mode='practice'; }
+  else if(mode==='idle'){ if(pos>=1) resetRun(); await countdown(); mode='practice'; }
+  syncButtons();
+}
+function syncButtons(){
+  const r=$('btnRec'), p=$('btnPractice');
+  r.classList.toggle('stop', mode==='rec');
+  r.textContent = mode==='rec' ? '■ 録画停止' : '● 録画開始';
+  r.disabled = !stream || !window.MediaRecorder || mode==='countdown' || mode==='practice' || mode==='paused';
+  p.textContent = mode==='practice' ? '一時停止' : mode==='paused' ? '再開' : '練習（録画なし）';
+  p.disabled = mode==='rec' || mode==='countdown';
+  $('btnReset').disabled = mode==='rec' || mode==='countdown';
+  rngGoal.disabled = mode==='rec';
+}
+
+// ---------- wiring ----------
+$('btnRec').onclick = ()=> mode==='rec' ? stopRec() : startRec();
+$('btnPractice').onclick = togglePractice;
+$('btnReset').onclick = ()=>{ if(mode==='paused') mode='idle'; resetRun(); syncButtons(); };
+rngGoal.oninput = ()=>{ goal=+rngGoal.value; store.set('goal',goal); updatePace(); };
+rngSize.oninput = ()=>{ size=+rngSize.value; store.set('size',size); layout(); };
+script.oninput = ()=>{ store.set('script',script.value); renderScript(); };
+$('btnDefault').onclick = ()=>{ script.value=DEFAULT_SCRIPT; store.set('script',DEFAULT_SCRIPT); renderScript(); };
+window.addEventListener('resize', layout);
+document.addEventListener('keydown', e=>{
+  if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT') return;
+  if(e.code==='Space'){ e.preventDefault(); if(mode==='rec') stopRec(); else if(mode==='idle' && stream) startRec(); }
+  else if(e.key==='p'||e.key==='P'){ togglePractice(); }
+  else if(e.key==='ArrowDown'||e.key==='ArrowUp'){ e.preventDefault(); pos=Math.min(1,Math.max(0,pos+(e.key==='ArrowDown'?0.02:-0.02))); apply(); }
+});
+
+renderScript(); updateTimer(); syncButtons();
+document.fonts && document.fonts.ready.then(layout);
+last = performance.now(); raf = requestAnimationFrame(tick);
+startCamera();
+})();
+</script>
+
+</body></html>
