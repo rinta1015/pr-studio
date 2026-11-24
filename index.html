@@ -1,138 +1,148 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="PR収録"><meta name="theme-color" content="#101318">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="PR収録"><meta name="theme-color" content="#000000">
 <meta name="robots" content="noindex"></head><body>
 <title>自己PR収録スタジオ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@700&display=swap">
 <style>
-/* Layout: prompter band pinned under the webcam at the top, camera + controls below, takes list last */
+/* Layout: prompter under the camera, preview + settings below, takes last. Looks like a phone camera app: black, grey fills, red record. */
 :root{
-  --bg:#101318; --panel:#181c23; --line:#2a303b; --fg:#e9edf3; --muted:#9aa4b2;
-  --cue:#f5c84b; --rec:#ef4a4a; --ok:#4cc38a;
-  --f-body:"BIZ UDPGothic","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",system-ui,sans-serif;
-  --f-num:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --bg:#000; --panel:#1c1c1e; --fill:#2c2c2e; --sel:#5a5a5e; --sep:#38383a;
+  --fg:#f2f2f7; --muted:#8e8e93; --cue:#ffd60a; --rec:#ff3b30; --ok:#30d158;
+  --f-ui:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI","Meiryo",sans-serif;
+  --f-read:"BIZ UDPGothic","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{height:100%}
-body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.6;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 32px}
-.wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
-.hint{color:var(--muted);font-size:12px;text-align:center;letter-spacing:.04em}
-.hint b{color:var(--cue);font-weight:700}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px 32px}
+.wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.num{font-variant-numeric:tabular-nums}
 
 /* Prompter */
-.prompter{position:relative;height:clamp(220px,40vh,420px);background:#000;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.prompter{position:relative;height:clamp(220px,40vh,420px);background:#000;border-radius:14px;overflow:hidden;box-shadow:inset 0 0 0 1px #1f1f21}
 .track{position:absolute;left:0;right:0;top:0;padding:0 clamp(16px,5vw,64px);will-change:transform}
-.track p{margin:0;margin-block-end:.7em;font-size:var(--fs,40px);line-height:1.55;font-weight:700;color:#f4f6f9;letter-spacing:.02em}
-.guide{position:absolute;left:0;right:0;top:var(--gy,28%);height:0;border-top:1px dashed var(--cue);opacity:.35;pointer-events:none}
-.guide::before,.guide::after{content:"";position:absolute;top:-7px;border:6px solid transparent}
+.track p{margin:0;margin-block-end:.7em;font-family:var(--f-read);font-size:var(--fs,40px);line-height:1.55;font-weight:700;color:#fff;letter-spacing:.02em}
+.track p.ph{color:#48484a;font-size:min(var(--fs,40px),28px)}
+.guide{position:absolute;left:0;right:0;top:var(--gy,28%);height:0;border-top:1px solid rgba(255,214,10,.28);pointer-events:none}
+.guide::before,.guide::after{content:"";position:absolute;top:-6px;border:5px solid transparent}
 .guide::before{left:0;border-left-color:var(--cue)}
 .guide::after{right:0;border-right-color:var(--cue)}
 .fade{position:absolute;left:0;right:0;pointer-events:none}
 .fade.top{top:0;height:14%;background:linear-gradient(#000,transparent)}
 .fade.bot{bottom:0;height:30%;background:linear-gradient(transparent,#000)}
-/* vertical (tategaki) mode */
 .prompter.v{height:clamp(360px,62vh,760px)}
 .prompter.v .track{left:50%;right:auto;padding:0;writing-mode:vertical-rl}
 .prompter.v .track p{margin:0;white-space:nowrap;line-height:1.2;letter-spacing:.08em}
 .tcy{text-combine-upright:all;-webkit-text-combine:horizontal}
 .brk{display:inline-block;inline-size:2em;text-align:center;color:var(--cue)}
 .prompter.v .guide{display:none}
-.win{display:none;position:absolute;left:50%;top:var(--wy,24px);transform:translateX(-50%);width:calc(var(--fs) * 1.9);height:var(--wh,160px);border:2px solid var(--cue);border-radius:10px;pointer-events:none}
+.win{display:none;position:absolute;left:50%;top:var(--wy,24px);transform:translateX(-50%);width:calc(var(--fs) * 1.9);height:var(--wh,160px);border:2px solid var(--cue);border-radius:12px;pointer-events:none}
 .prompter.v .win{display:block}
-/* camera on the side: pull the reading spot toward that edge */
 .prompter[data-cam="left"]:not(.v) .track{padding-left:clamp(12px,3vw,32px);padding-right:40%}
 .prompter[data-cam="right"]:not(.v) .track{padding-right:clamp(12px,3vw,32px);padding-left:40%}
 .prompter[data-cam="left"]:not(.v) .guide{right:38%}
 .prompter[data-cam="right"]:not(.v) .guide{left:38%}
 .prompter.v[data-cam="left"] .track,.prompter.v[data-cam="left"] .win{left:16%}
 .prompter.v[data-cam="right"] .track,.prompter.v[data-cam="right"] .win{left:84%}
-.camdot{position:absolute;width:12px;height:12px;border-radius:50%;background:var(--cue);box-shadow:0 0 0 4px rgba(245,200,75,.25);pointer-events:none;z-index:2}
-.prompter[data-cam="top"] .camdot{top:6px;left:50%;transform:translateX(-50%)}
-.prompter[data-cam="left"] .camdot{left:6px;top:var(--gy,40%);transform:translateY(-50%)}
-.prompter[data-cam="right"] .camdot{right:6px;top:var(--gy,40%);transform:translateY(-50%)}
+.camdot{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--cue);pointer-events:none;z-index:2}
+.prompter[data-cam="top"] .camdot{top:8px;left:50%;transform:translateX(-50%)}
+.prompter[data-cam="left"] .camdot{left:8px;top:var(--gy,40%);transform:translateY(-50%)}
+.prompter[data-cam="right"] .camdot{right:8px;top:var(--gy,40%);transform:translateY(-50%)}
 .prompter.v[data-cam="left"] .camdot,.prompter.v[data-cam="right"] .camdot{top:calc(var(--wy,24px) + var(--wh,160px) / 2)}
 .prompter.v .fade.top{top:0;height:var(--wy,24px);background:rgba(0,0,0,.9)}
 .prompter.v .fade.bot{top:calc(var(--wy,24px) + var(--wh,160px));bottom:0;height:auto;background:linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.92))}
-.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;width:max-content}
-.seg button{border:0;border-radius:0;background:transparent;padding:8px 16px;min-height:44px;color:var(--muted)}
-.segs{display:flex;flex-wrap:wrap;gap:10px}
-.seg button[aria-pressed="true"]{background:var(--cue);color:#111}
-.count{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-num);font-size:min(28vh,160px);color:var(--cue);background:rgba(0,0,0,.6)}
+.count{position:absolute;inset:0;display:grid;place-items:center;font-size:min(26vh,150px);font-weight:300;color:#fff;background:rgba(0,0,0,.55);font-variant-numeric:tabular-nums}
+
+/* Segmented control, iOS style */
+.seg{display:inline-flex;background:var(--fill);border-radius:9px;padding:2px;gap:2px;width:max-content;max-width:100%}
+.seg button{border:0;background:transparent;border-radius:7px;padding:6px 14px;min-height:34px;font-weight:500;color:var(--fg)}
+.seg button[aria-pressed="true"]{background:var(--sel)}
+.seg button:hover:not(:disabled){background:#3a3a3c}
+.seg button[aria-pressed="true"]:hover:not(:disabled){background:var(--sel)}
 
 /* Studio row */
-.studio{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:14px}
+.studio{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:12px}
+.cam{position:relative;aspect-ratio:16/9;max-width:100%;background:#111;border-radius:14px;overflow:hidden}
 .cam.port{aspect-ratio:9/16;justify-self:center;width:min(100%,calc(56vh * 9 / 16))}
 @media (max-width:760px),(orientation:portrait) and (max-width:1100px){.studio{grid-template-columns:1fr}.cam{justify-self:center;width:min(100%,calc(30vh * 16 / 9))}.cam.port{width:min(100%,calc(38vh * 9 / 16))}}
-.cam{position:relative;aspect-ratio:16/9;max-width:100%;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .cam video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block}
-.cam .off{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:16px;color:var(--muted);font-size:13px}
-.badge{position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.65);padding:3px 10px;border-radius:99px;font-family:var(--f-num);font-size:12px}
-.badge i{width:9px;height:9px;border-radius:50%;background:var(--rec);animation:blink 1s infinite}
-@keyframes blink{50%{opacity:.25}}
-@media (prefers-reduced-motion:reduce){.badge i{animation:none}}
+.cam .off{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:16px;color:var(--muted);font-size:14px}
+.badge{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:6px;background:var(--rec);color:#fff;padding:2px 10px;border-radius:6px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
 
-.ctrl{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
-.timer{display:flex;align-items:baseline;gap:10px;font-family:var(--f-num);font-variant-numeric:tabular-nums}
-.timer .t{font-size:44px;line-height:1}
-.timer .of{color:var(--muted);font-size:14px}
+.ctrl{background:var(--panel);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.timer{display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums}
+.timer .t{font-size:44px;line-height:1;font-weight:300;letter-spacing:.01em}
+.timer .of{color:var(--muted);font-size:17px}
 .timer.warn .t{color:var(--cue)} .timer.over .t{color:var(--rec)}
-.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
-.bar span{display:block;height:100%;width:0;background:var(--ok)}
+.bar{height:3px;background:var(--fill);border-radius:2px;overflow:hidden;margin-top:-6px}
+.bar span{display:block;height:100%;width:0;background:var(--fg)}
 .timer.warn+.bar span{background:var(--cue)} .timer.over+.bar span{background:var(--rec)}
 .btns{display:flex;flex-wrap:wrap;gap:8px}
-button{font:inherit;font-weight:700;min-height:44px;touch-action:manipulation;border:1px solid var(--line);background:#222833;color:var(--fg);padding:10px 16px;border-radius:8px;cursor:pointer}
-button:hover:not(:disabled){border-color:var(--muted)}
-button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--cue);outline-offset:2px}
-button:disabled{opacity:.4;cursor:not-allowed}
-button.rec{background:var(--rec);border-color:var(--rec);color:#fff}
-button.rec.stop{background:#fff;color:#111;border-color:#fff}
-.field{display:grid;grid-template-columns:7.5em 1fr 4.5em;align-items:center;gap:10px;font-size:13px}
-.field output{font-family:var(--f-num);text-align:right;color:var(--muted)}
+button{font:inherit;font-weight:600;min-height:44px;touch-action:manipulation;border:0;background:var(--fill);color:var(--fg);padding:10px 18px;border-radius:10px;cursor:pointer}
+button:hover:not(:disabled){background:#3a3a3c}
+button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid #0a84ff;outline-offset:2px}
+button:disabled{opacity:.35;cursor:not-allowed}
+button.rec{background:var(--rec);color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+button.rec:hover:not(:disabled){background:#e0342a}
+button.rec::before{content:"";width:12px;height:12px;border-radius:50%;background:#fff}
+button.rec.stop::before{border-radius:2px}
+
+.rows{display:flex;flex-direction:column;border-top:1px solid var(--sep)}
+.field{display:grid;grid-template-columns:6.5em 1fr auto;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--sep);min-height:52px}
+.field>label,.field>.lab{color:var(--fg)}
+.field output,.field .unit{color:var(--muted);text-align:right;font-variant-numeric:tabular-nums;min-width:2.5em}
+.field .seg{justify-self:start}
 .stepper{display:flex;align-items:center;gap:6px;min-width:0}
-.stepper input{width:5.5em;min-width:0;min-height:44px;text-align:center;font:500 18px var(--f-num);background:#0c0f13;color:var(--fg);border:1px solid var(--line);border-radius:8px}
-.stepper button{min-width:44px;padding:0 10px;font-size:20px;line-height:1}
-.field .unit{color:var(--muted)}
-input[type=range]{width:100%;height:36px;accent-color:var(--cue);touch-action:pan-y}
-/* phones: big bottom bar for the three main actions */
+.stepper input{width:4.6em;min-width:0;min-height:38px;text-align:center;font:500 17px var(--f-ui);font-variant-numeric:tabular-nums;background:var(--fill);color:var(--fg);border:0;border-radius:8px}
+.stepper button{min-width:38px;min-height:38px;padding:0 8px;font-size:20px;font-weight:400;line-height:1}
+input[type=range]{width:100%;height:32px;accent-color:#f2f2f7;touch-action:pan-y}
+.note{font-size:13px;color:var(--muted)}
+.note.fast{color:var(--cue)}
+.keys{font-size:12px;color:#636366}
+.keys kbd{font:inherit;background:var(--fill);border-radius:4px;padding:0 5px;color:var(--muted)}
 @media (max-width:760px){
-  .mainbtns{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:1.6fr 1.2fr 1fr;gap:8px;background:var(--panel);border-top:1px solid var(--line);
+  .mainbtns{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:1.6fr 1.1fr 1fr;gap:8px;background:rgba(28,28,30,.94);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
     padding:10px max(12px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
-  .mainbtns button{min-height:60px;font-size:16px;padding:8px 6px}
-  body{padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))}
+  .mainbtns button{min-height:56px;font-size:17px;padding:8px 6px;white-space:nowrap}
+  body{padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}
   .keys{display:none}
   .prompter.v{height:clamp(300px,46vh,520px)}
-  .mainbtns button{white-space:nowrap}
-  .field{grid-template-columns:5.5em 1fr 3.5em}
-  .seg button{min-height:48px;padding:8px 14px}
+  .field{grid-template-columns:5em 1fr auto}
+  .seg button{min-height:40px;padding:6px 12px}
 }
-.note{font-size:12px;color:var(--muted)}
-.keys{font-size:12px;color:var(--muted)} .keys kbd{font-family:var(--f-num);border:1px solid var(--line);border-radius:4px;padding:0 5px;color:var(--fg)}
 
-details{background:var(--panel);border:1px solid var(--line);border-radius:10px}
-summary{cursor:pointer;padding:12px 16px;font-weight:700}
+details{background:var(--panel);border-radius:14px}
+summary{cursor:pointer;padding:14px 16px;font-weight:600;list-style:none;display:flex;justify-content:space-between}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"›";color:var(--muted);font-size:20px;line-height:1;transition:transform .15s}
+details[open] summary::after{transform:rotate(90deg)}
 .edit{padding:0 16px 16px;display:flex;flex-direction:column;gap:8px}
-textarea{width:100%;min-height:200px;resize:vertical;background:#0c0f13;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:12px;font:15px/1.7 var(--f-body)}
-.meta{font-family:var(--f-num);font-size:12px;color:var(--muted)}
+textarea{width:100%;min-height:200px;resize:vertical;background:#000;color:var(--fg);border:0;border-radius:10px;padding:12px;font:16px/1.7 var(--f-read)}
+.editfoot{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.meta{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+button.plain{background:transparent;color:#ff453a;padding:8px 4px;min-height:36px}
 
-.takes{display:flex;flex-direction:column;gap:10px}
-.takes h2{font-size:15px;margin:0}
-.take{display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr);gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;align-items:center}
+.takes{display:flex;flex-direction:column;gap:6px}
+.takes h2{font-size:13px;font-weight:600;color:var(--muted);margin:8px 0 0 4px}
+#takeList{background:var(--panel);border-radius:14px;overflow:hidden}
+.take{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);gap:14px;padding:12px;align-items:center;border-bottom:1px solid var(--sep)}
+.take:last-child{border-bottom:0}
 @media (max-width:560px){.take{grid-template-columns:1fr}}
-.take video{width:100%;border-radius:6px;background:#000;display:block}
-.take .info{display:flex;flex-direction:column;gap:8px;min-width:0}
-.take .name{font-weight:700}
-.take .dur{font-family:var(--f-num);font-size:13px}
-.take a.save{display:inline-block;text-decoration:none;font-weight:700;color:#111;background:var(--ok);padding:8px 14px;border-radius:8px;width:max-content}
-.empty{color:var(--muted);font-size:13px}
+.take video{width:100%;border-radius:8px;background:#000;display:block}
+.take .info{display:flex;flex-direction:column;gap:6px;min-width:0}
+.take .name{font-weight:600}
+.take .dur{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.take .dur.over{color:var(--rec)}
+.take a.save{display:inline-block;text-decoration:none;font-weight:600;color:#0a84ff;padding:6px 0;width:max-content}
+.empty{color:var(--muted);font-size:14px;padding:14px 16px}
+@media (prefers-reduced-motion:reduce){summary::after{transition:none}}
 </style>
 
 <div class="wrap">
-  <div class="hint" id="hint">▲ カメラはこの上です。目線は<b>黄色い線</b>のあたりに置くと、カメラ目線に見えます</div>
-
   <div class="prompter" id="prompter" data-cam="top">
     <div class="track" id="track"></div>
     <div class="fade top"></div><div class="fade bot"></div>
@@ -145,42 +155,43 @@ textarea{width:100%;min-height:200px;resize:vertical;background:#0c0f13;color:va
   <div class="studio">
     <div class="cam" id="cam">
       <video id="preview" autoplay muted playsinline></video>
-      <div class="off" id="camOff">カメラを準備しています…</div>
-      <div class="badge" id="recBadge" hidden><i></i><span>REC</span></div>
+      <div class="off" id="camOff">カメラを起動中</div>
+      <div class="badge" id="recBadge" hidden><span id="badgeT">0:00</span></div>
     </div>
 
     <div class="ctrl">
-      <div class="segs"><div class="seg" role="group" aria-label="原稿の向き"><button id="btnH" aria-pressed="true">横書き</button><button id="btnV" aria-pressed="false">縦書き</button></div>
-      <div class="seg" role="group" aria-label="動画の向き"><button id="btnOH" aria-pressed="true">横動画 16:9</button><button id="btnOV" aria-pressed="false">縦動画 9:16</button></div>
-      <div class="seg" role="group" aria-label="カメラの位置"><button class="camsel" data-cam="top" aria-pressed="true">カメラ 上</button><button class="camsel" data-cam="left" aria-pressed="false">左</button><button class="camsel" data-cam="right" aria-pressed="false">右</button></div></div>
-      <div class="timer" id="timer"><span class="t" id="tNow">0:00.0</span><span class="of">/ 制限 <span id="tLimit">1:00</span>（流す <span id="tGoal">0:58</span>）</span></div>
+      <div class="timer" id="timer"><span class="t" id="tNow">0:00.0</span><span class="of">/ <span id="tLimit">1:00</span></span></div>
       <div class="bar"><span id="barFill"></span></div>
       <div class="btns mainbtns">
-        <button class="rec" id="btnRec" disabled>● 録画開始</button>
+        <button class="rec" id="btnRec" disabled>録画</button>
         <button id="btnPractice">練習</button>
         <button id="btnReset">最初へ</button>
       </div>
-      <div class="field"><label for="numLimit">制限時間</label><div class="stepper"><button type="button" class="step" data-for="numLimit" data-d="-5" aria-label="制限時間を5秒減らす">−</button><input type="number" id="numLimit" inputmode="numeric" min="5" max="600" step="1" value="60"><button type="button" class="step" data-for="numLimit" data-d="5" aria-label="制限時間を5秒増やす">+</button></div><span class="unit">秒</span></div>
-      <div class="field"><label for="numGoal">流す時間</label><div class="stepper"><button type="button" class="step" data-for="numGoal" data-d="-1" aria-label="流す時間を1秒減らす">−</button><input type="number" id="numGoal" inputmode="numeric" min="5" max="600" step="1" value="58"><button type="button" class="step" data-for="numGoal" data-d="1" aria-label="流す時間を1秒増やす">+</button></div><span class="unit">秒</span></div>
-      <label class="field" for="rngWin" id="winField">読む範囲<input type="range" id="rngWin" min="3" max="5" step="1" value="4"><output id="outWin">4字</output></label>
-      <label class="field" for="rngSize">文字サイズ<input type="range" id="rngSize" min="22" max="72" step="2" value="40"><output id="outSize">40px</output></label>
+      <div class="rows">
+        <div class="field"><span class="lab">原稿</span><div class="seg" role="group" aria-label="原稿の向き"><button id="btnH" aria-pressed="true">横書き</button><button id="btnV" aria-pressed="false">縦書き</button></div><span></span></div>
+        <div class="field"><span class="lab">動画</span><div class="seg" role="group" aria-label="動画の向き"><button id="btnOH" aria-pressed="true">横 16:9</button><button id="btnOV" aria-pressed="false">縦 9:16</button></div><span></span></div>
+        <div class="field"><span class="lab">カメラ</span><div class="seg" role="group" aria-label="カメラの位置"><button class="camsel" data-cam="top" aria-pressed="true">上</button><button class="camsel" data-cam="left" aria-pressed="false">左</button><button class="camsel" data-cam="right" aria-pressed="false">右</button></div><span></span></div>
+        <div class="field"><label for="numLimit">制限時間</label><div class="stepper"><button type="button" class="step" data-for="numLimit" data-d="-5" aria-label="5秒減らす">−</button><input type="number" id="numLimit" inputmode="numeric" min="5" max="600" step="1" value="60"><button type="button" class="step" data-for="numLimit" data-d="5" aria-label="5秒増やす">+</button></div><span class="unit">秒</span></div>
+        <div class="field"><label for="numGoal">流す時間</label><div class="stepper"><button type="button" class="step" data-for="numGoal" data-d="-1" aria-label="1秒減らす">−</button><input type="number" id="numGoal" inputmode="numeric" min="5" max="600" step="1" value="58"><button type="button" class="step" data-for="numGoal" data-d="1" aria-label="1秒増やす">+</button></div><span class="unit">秒</span></div>
+        <label class="field" for="rngWin" id="winField">読む範囲<input type="range" id="rngWin" min="3" max="5" step="1" value="4"><output id="outWin">4字</output></label>
+        <label class="field" for="rngSize">文字サイズ<input type="range" id="rngSize" min="22" max="72" step="2" value="40"><output id="outSize">40</output></label>
+      </div>
       <div class="note" id="pace"></div>
-      <div class="keys"><kbd>Space</kbd> 録画の開始・停止　<kbd>P</kbd> 練習の開始・一時停止　<kbd>↑</kbd><kbd>↓</kbd> 位置の微調整　原稿をタップでも練習の開始・一時停止</div>
+      <div class="keys"><kbd>Space</kbd> 録画　<kbd>P</kbd> 練習　<kbd>↑</kbd><kbd>↓</kbd> 位置合わせ</div>
     </div>
   </div>
 
   <details id="editBox">
-    <summary>原稿を編集</summary>
+    <summary>原稿</summary>
     <div class="edit">
-      <textarea id="script" aria-label="原稿" placeholder="ここに原稿を貼り付けてください。段落ごとに改行すると読みやすくなります。"></textarea>
-      <div class="meta" id="chars"></div>
-      <div class="btns"><button id="btnDefault">原稿を消去</button></div>
+      <textarea id="script" aria-label="原稿" placeholder="原稿を貼り付け"></textarea>
+      <div class="editfoot"><span class="meta" id="chars"></span><button class="plain" id="btnDefault">消去</button></div>
     </div>
   </details>
 
   <section class="takes">
-    <h2>撮ったテイク</h2>
-    <div id="takeList"><div class="empty">まだありません。録画するとここに並び、見返して保存できます。</div></div>
+    <h2>テイク</h2>
+    <div id="takeList"><div class="empty">まだありません</div></div>
   </section>
 </div>
 
@@ -226,31 +237,28 @@ function renderScript(){
   } else {
     paras.forEach(t=>{ const p=document.createElement('p'); p.innerHTML=html(t); track.appendChild(p); });
   }
-  if(!track.firstChild){ const p=document.createElement('p'); p.style.color='#6b7480'; p.textContent='下の「原稿を編集」に原稿を貼り付けてください'; track.appendChild(p); $('editBox').open=true; }
+  if(!track.firstChild){ const p=document.createElement('p'); p.className='ph'; p.textContent='原稿が入っていません'; track.appendChild(p); $('editBox').open=true; }
   const n = script.value.replace(/\s/g,'').length;
-  $('chars').textContent = n+'字（スペース・改行を除く）';
+  $('chars').textContent = n+'字';
   updatePace(); layout();
 }
 function updatePace(){
   const n = script.value.replace(/\s/g,'').length;
   const perMin = Math.round(n/goal*60);
-  let msg = `この速さだと1分あたり約${perMin}字。`;
-  msg += perMin>330 ? 'やや早口です。秒数を増やすか原稿を短くしましょう。' : perMin<260 ? 'ゆったりめです。' : '聞き取りやすいペースです。';
-  if(goal > limit) msg += ' 流す時間が制限時間より長いので、最後まで読むと制限を超えます。';
+  let msg = n ? `約${perMin}字/分` + (perMin>330 ? '・速め' : perMin<260 ? '・ゆっくり' : '') : '';
+  if(goal > limit) msg += (msg?'　':'') + '流す時間が制限時間を超えています';
   $('pace').textContent = msg;
-  $('tGoal').textContent = fmtGoal(goal); $('tLimit').textContent = fmtGoal(limit);
+  $('pace').classList.toggle('fast', perMin>330 || goal>limit);
+  $('tLimit').textContent = fmtGoal(limit);
 }
 function layout(){
   prompter.style.setProperty('--fs', size+'px');
   $('winField').hidden = !vert; $('outWin').textContent = win+'字';
-  $('outSize').textContent = size+'px';
+  $('outSize').textContent = size;
   prompter.classList.toggle('v', vert);
   $('btnH').setAttribute('aria-pressed', String(!vert)); $('btnV').setAttribute('aria-pressed', String(vert));
   prompter.dataset.cam = camPos;
   document.querySelectorAll('.camsel').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.cam===camPos)));
-  const where = {top:'▲ カメラは画面の上', left:'◀ カメラは画面の左', right:'カメラは画面の右 ▶'}[camPos];
-  const read = vert ? '<b>黄色い枠</b>の中だけを見てください。文字が下から上へ流れてきます' : '目線は<b>黄色い線</b>のあたりに置くと、カメラ目線に見えます';
-  $('hint').innerHTML = where + '（黄色い点の方向）に合わせています。' + read;
   if(vert){
     const h = prompter.clientHeight;
     const wy = camPos==='top' ? Math.max(14, Math.round(h*0.05)) : Math.round(h*0.28);
@@ -296,6 +304,7 @@ function tick(now){
 }
 function updateTimer(){
   $('tNow').textContent = fmt(elapsed);
+  $('badgeT').textContent = fmtGoal(Math.floor(elapsed));
   const t=$('timer'); t.classList.toggle('warn', elapsed>=limit-5 && elapsed<limit); t.classList.toggle('over', elapsed>=limit);
   $('barFill').style.width = Math.min(100, elapsed/limit*100)+'%';
 }
@@ -323,10 +332,10 @@ async function startCamera(){
     $('preview').srcObject = stream; off.hidden = true;
     recMime = pickMime();
     $('btnRec').disabled = !window.MediaRecorder;
-    if(!window.MediaRecorder){ off.hidden=false; off.textContent='このブラウザは録画に対応していません。PCのChromeかEdgeで開いてください。'; }
+    if(!window.MediaRecorder){ off.hidden=false; off.textContent='このブラウザでは録画できません'; }
   }catch(e){
     off.hidden=false;
-    off.innerHTML = 'このページではカメラを使えません。<br>保存したHTMLファイルを<b>PCのChromeかEdge</b>で開くと録画できます。<br>プロンプターだけなら、このまま練習に使えます。';
+    off.textContent = 'カメラを使えません（練習はできます）';
   }
 }
 async function startRec(){
@@ -380,12 +389,12 @@ function addTake(blob, secs, o){
   const el=document.createElement('div'); el.className='take';
   const v=document.createElement('video'); v.src=url; v.controls=true; v.playsInline=true;
   const info=document.createElement('div'); info.className='info';
-  const name=document.createElement('div'); name.className='name'; name.textContent='テイク '+takeNo+(o==='v'?'（縦動画）':'（横動画）');
+  const name=document.createElement('div'); name.className='name'; name.textContent='テイク'+takeNo+(o==='v'?'・縦':'・横');
   const d=document.createElement('div'); d.className='dur';
-  d.textContent = '長さ '+fmt(secs)+(secs>limit?'　制限時間（'+fmtGoal(limit)+'）を超えています':secs>=limit*0.85?'　ちょうど良い長さです':'　少し短めです');
-  const a=document.createElement('a'); a.className='save'; a.href=url; a.download=`自己PR_テイク${takeNo}.${ext}`; a.textContent=`保存（.${ext}）`;
+  d.textContent = fmt(secs)+(secs>limit?'　'+fmtGoal(limit)+'超過':''); if(secs>limit) d.classList.add('over');
+  const a=document.createElement('a'); a.className='save'; a.href=url; a.download=`自己PR_テイク${takeNo}.${ext}`; a.textContent='保存';
   const note=document.createElement('div'); note.className='note';
-  note.textContent = ext==='webm' ? '提出形式がMP4指定の場合は、変換が必要です。' : '';
+  note.textContent = ext==='webm' ? 'WebM形式' : '';
   info.append(name,d,a,note); el.append(v,info);
   list.prepend(el);
 }
@@ -400,7 +409,7 @@ async function togglePractice(){
 function syncButtons(){
   const r=$('btnRec'), p=$('btnPractice');
   r.classList.toggle('stop', mode==='rec');
-  r.textContent = mode==='rec' ? '■ 録画停止' : '● 録画開始';
+  r.textContent = mode==='rec' ? '停止' : '録画';
   r.disabled = !stream || !window.MediaRecorder || mode==='countdown' || mode==='practice' || mode==='paused';
   p.textContent = mode==='practice' ? '一時停止' : mode==='paused' ? '再開' : '練習';
   p.disabled = mode==='rec' || mode==='countdown';
