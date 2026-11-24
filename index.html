@@ -43,6 +43,18 @@ body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14
 .prompter.v .guide{display:none}
 .win{display:none;position:absolute;left:50%;top:var(--wy,24px);transform:translateX(-50%);width:calc(var(--fs) * 1.9);height:var(--wh,160px);border:2px solid var(--cue);border-radius:10px;pointer-events:none}
 .prompter.v .win{display:block}
+/* camera on the side: pull the reading spot toward that edge */
+.prompter[data-cam="left"]:not(.v) .track{padding-left:clamp(12px,3vw,32px);padding-right:40%}
+.prompter[data-cam="right"]:not(.v) .track{padding-right:clamp(12px,3vw,32px);padding-left:40%}
+.prompter[data-cam="left"]:not(.v) .guide{right:38%}
+.prompter[data-cam="right"]:not(.v) .guide{left:38%}
+.prompter.v[data-cam="left"] .track,.prompter.v[data-cam="left"] .win{left:16%}
+.prompter.v[data-cam="right"] .track,.prompter.v[data-cam="right"] .win{left:84%}
+.camdot{position:absolute;width:12px;height:12px;border-radius:50%;background:var(--cue);box-shadow:0 0 0 4px rgba(245,200,75,.25);pointer-events:none;z-index:2}
+.prompter[data-cam="top"] .camdot{top:6px;left:50%;transform:translateX(-50%)}
+.prompter[data-cam="left"] .camdot{left:6px;top:var(--gy,40%);transform:translateY(-50%)}
+.prompter[data-cam="right"] .camdot{right:6px;top:var(--gy,40%);transform:translateY(-50%)}
+.prompter.v[data-cam="left"] .camdot,.prompter.v[data-cam="right"] .camdot{top:calc(var(--wy,24px) + var(--wh,160px) / 2)}
 .prompter.v .fade.top{top:0;height:var(--wy,24px);background:rgba(0,0,0,.9)}
 .prompter.v .fade.bot{top:calc(var(--wy,24px) + var(--wh,160px));bottom:0;height:auto;background:linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.92))}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;width:max-content}
@@ -121,10 +133,11 @@ textarea{width:100%;min-height:200px;resize:vertical;background:#0c0f13;color:va
 <div class="wrap">
   <div class="hint" id="hint">▲ カメラはこの上です。目線は<b>黄色い線</b>のあたりに置くと、カメラ目線に見えます</div>
 
-  <div class="prompter" id="prompter">
+  <div class="prompter" id="prompter" data-cam="top">
     <div class="track" id="track"></div>
     <div class="fade top"></div><div class="fade bot"></div>
     <div class="guide"></div>
+    <div class="camdot" aria-hidden="true"></div>
     <div class="win" id="win"></div>
     <div class="count" id="count" hidden>3</div>
   </div>
@@ -138,7 +151,8 @@ textarea{width:100%;min-height:200px;resize:vertical;background:#0c0f13;color:va
 
     <div class="ctrl">
       <div class="segs"><div class="seg" role="group" aria-label="原稿の向き"><button id="btnH" aria-pressed="true">横書き</button><button id="btnV" aria-pressed="false">縦書き</button></div>
-      <div class="seg" role="group" aria-label="動画の向き"><button id="btnOH" aria-pressed="true">横動画 16:9</button><button id="btnOV" aria-pressed="false">縦動画 9:16</button></div></div>
+      <div class="seg" role="group" aria-label="動画の向き"><button id="btnOH" aria-pressed="true">横動画 16:9</button><button id="btnOV" aria-pressed="false">縦動画 9:16</button></div>
+      <div class="seg" role="group" aria-label="カメラの位置"><button class="camsel" data-cam="top" aria-pressed="true">カメラ 上</button><button class="camsel" data-cam="left" aria-pressed="false">左</button><button class="camsel" data-cam="right" aria-pressed="false">右</button></div></div>
       <div class="timer" id="timer"><span class="t" id="tNow">0:00.0</span><span class="of">/ 制限 <span id="tLimit">1:00</span>（流す <span id="tGoal">0:58</span>）</span></div>
       <div class="bar"><span id="barFill"></span></div>
       <div class="btns mainbtns">
@@ -187,6 +201,7 @@ let goal = clampSec(store.get('goal', 58)) || 58, limit = clampSec(store.get('li
 let vert = store.get('vert','0')==='1';
 let win = +store.get('win', 4);
 let orient = store.get('orient','h');
+let camPos = ['top','left','right'].includes(store.get('cam','top')) ? store.get('cam','top') : 'top';
 $('rngWin').value = win;
 numGoal.value = goal; numLimit.value = limit; rngSize.value = size;
 script.value = store.get('script', DEFAULT_SCRIPT);
@@ -196,7 +211,7 @@ let pos = 0;            // 0..1 progress through the script
 let elapsed = 0;        // seconds of current run
 let mode = 'idle';      // idle | countdown | practice | paused | rec
 let last = 0, raf = 0;
-const GUIDE = 0.28;
+const guideFrac = () => camPos==='top' ? 0.28 : 0.42;
 
 function fmt(s){ const m=Math.floor(s/60), r=s-m*60; return m+':'+(r<10?'0':'')+r.toFixed(1); }
 function fmtGoal(s){ return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
@@ -231,10 +246,14 @@ function layout(){
   $('outSize').textContent = size+'px';
   prompter.classList.toggle('v', vert);
   $('btnH').setAttribute('aria-pressed', String(!vert)); $('btnV').setAttribute('aria-pressed', String(vert));
-  $('hint').innerHTML = vert ? '▲ カメラはこの上です。<b>黄色い枠</b>の中だけを見てください。文字が下から上へ流れてきます' : '▲ カメラはこの上です。目線は<b>黄色い線</b>のあたりに置くと、カメラ目線に見えます';
+  prompter.dataset.cam = camPos;
+  document.querySelectorAll('.camsel').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.cam===camPos)));
+  const where = {top:'▲ カメラは画面の上', left:'◀ カメラは画面の左', right:'カメラは画面の右 ▶'}[camPos];
+  const read = vert ? '<b>黄色い枠</b>の中だけを見てください。文字が下から上へ流れてきます' : '目線は<b>黄色い線</b>のあたりに置くと、カメラ目線に見えます';
+  $('hint').innerHTML = where + '（黄色い点の方向）に合わせています。' + read;
   if(vert){
     const h = prompter.clientHeight;
-    const wy = Math.max(14, Math.round(h*0.05));
+    const wy = camPos==='top' ? Math.max(14, Math.round(h*0.05)) : Math.round(h*0.28);
     const wh = Math.round(win * size * 1.08 + size*0.3);
     track.style.padding = '0';
     prompter.style.setProperty('--wy', wy+'px'); prompter.style.setProperty('--wh', wh+'px');
@@ -242,7 +261,8 @@ function layout(){
   } else {
     const h = prompter.clientHeight;
     track.style.padding = ''; track.style.top = '';
-    track.style.paddingTop = (h*GUIDE - size*0.9)+'px';
+    prompter.style.setProperty('--gy', (guideFrac()*100)+'%');
+    track.style.paddingTop = (h*guideFrac() - size*0.9)+'px';
     track.style.paddingBottom = h+'px';
   }
   apply();
@@ -386,6 +406,7 @@ function syncButtons(){
   p.disabled = mode==='rec' || mode==='countdown';
   $('btnReset').disabled = mode==='rec' || mode==='countdown';
   $('btnH').disabled = $('btnV').disabled = $('btnOH').disabled = $('btnOV').disabled = mode==='rec' || mode==='countdown';
+  document.querySelectorAll('.camsel').forEach(b=>{ b.disabled = mode==='rec' || mode==='countdown'; });
   [numGoal, numLimit, ...document.querySelectorAll('.step')].forEach(el=>{ el.disabled = mode==='rec' || mode==='countdown'; });
 }
 
@@ -398,6 +419,7 @@ function setOrient(o){ if(mode==='rec'||mode==='countdown') return; orient=o; st
 function applyOrient(){ $('cam').classList.toggle('port', orient==='v'); $('btnOH').setAttribute('aria-pressed', String(orient!=='v')); $('btnOV').setAttribute('aria-pressed', String(orient==='v')); }
 $('btnOH').onclick = ()=>setOrient('h');
 $('btnOV').onclick = ()=>setOrient('v');
+document.querySelectorAll('.camsel').forEach(b=>b.addEventListener('click', ()=>{ if(mode==='rec'||mode==='countdown') return; camPos=b.dataset.cam; store.set('cam',camPos); layout(); }));
 prompter.addEventListener('click', ()=>{ if(mode==='idle'||mode==='practice'||mode==='paused') togglePractice(); });
 $('rngWin').oninput = ()=>{ win=+$('rngWin').value; store.set('win',win); layout(); };
 $('btnH').onclick = ()=>setVert(false);
